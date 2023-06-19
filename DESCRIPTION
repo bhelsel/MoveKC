@@ -1,0 +1,38 @@
+Package: MoveKC
+Type: Package
+Title: Accelerometer Data Processing
+Version: 0.1.0
+Author: Brian C. Helsel
+Maintainer: The package maintainer <bhelsel80@gmail.com>
+Description: The MoveKC package contains functions for accelerometer data processing.
+Imports: 
+    DBI, 
+    dplyr,
+    DescTools,
+    PhysicalActivity, 
+    RSQLite,
+    data.table,
+    lubridate, 
+    plyr, 
+    readr,
+    read.gt3x,
+    rlang,
+    stats,
+    stringr, 
+    tibble,
+    tidyr,
+    utils,
+    magrittr
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Suggests: 
+    rmarkdown,
+    knitr,
+    remotes
+Remotes: 
+    bhelsel/agcounts,
+    THLfi/read.gt3x
+VignetteBuilder: knitr
