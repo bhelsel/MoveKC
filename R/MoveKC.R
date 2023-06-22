@@ -2,7 +2,8 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(
   c(".", " Axis1", "counts", "Vector Magnitude",
     "days", "interrupts", "mvpa", "mvpa.bout.counts", "mvpa.bout.length", 
     "record.id", "season", "sedentary", "steps", "temp", "time.category", 
-    "valid_days", "vector.magnitude", "wear", "weekday"))
+    "valid_days", "vector.magnitude", "wear", "weekday", "time", "weekend",
+    "data", "Days", "Hours"))
 
 #' @title MoveKC: A package for physical activity and weight management research.
 #'

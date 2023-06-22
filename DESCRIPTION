@@ -22,7 +22,8 @@ Imports:
     tibble,
     tidyr,
     utils,
-    magrittr
+    magrittr,
+    gt
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
