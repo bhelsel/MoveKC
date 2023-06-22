@@ -76,6 +76,7 @@ calculate_wear_time <- function(directory, valid_wear_time = c(8, 10)){
 
 #' @title wear_time_tbl_summary
 #' @description Print out a gt table with the number of valid observations
+#' @param data Data with wear time information from the calculate_wear_time function
 #' @param days Number of days to consider for valid wear time, Default: c()
 #' @param weekend Whether the wear time criteria consider the difference between valid weekend days, Default: TRUE
 #' @return A gt table with the number of valid observation
@@ -91,7 +92,7 @@ calculate_wear_time <- function(directory, valid_wear_time = c(8, 10)){
 #' @importFrom gt gt
 
 
-wear_time_tbl_summary <- function(days = c(), weekend = TRUE){
+wear_time_tbl_summary <- function(data, days = c(), weekend = TRUE){
   
   if(length(days) == 0) stop("Please add the number of days to consider for valid wear time")
   
