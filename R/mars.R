@@ -5,6 +5,7 @@
 #' @param results Directory where the results should be stored.
 #' @param adult.cp Adult cut-point to be used (see cutpoint.list.R for list of available cut-points), Default: ''
 #' @param child.cp Child cut-point to be used (see cutpoint.list.R for list of available cut-points), Default: ''
+#' @param spurious A maximum value for vertical or vector magnitude counts to not exceed, Default: 20000
 #' @param axis Number of axes to be used (1: Vertical Axis; 3: Vector Magnitude), Default: 1
 #' @param overwrite Overwrite the individual files if individual.file.save is set to TRUE, Default: FALSE
 #' @param person.time Export the accelerometer summary by person time categories, Default: FALSE
@@ -15,16 +16,6 @@
 #' @param individual.file.save Save all of the individual timestamped files to a CSV, Default: FALSE
 #' @return Individual and/or summary files to a Results folder located in the designated directory.
 #' @details Main function to execute MARS accelerometer processing program.
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  mars.main(study.name = "study", study.id = "A1001", datadir=datadir, 
-#'  results=results, adult.cp = "troiano.adult", child.cp = "freedson.child", 
-#'  axis = 1, overwrite=FALSE, person.time=FALSE,  person.date=TRUE, 
-#'  person.month=FALSE, valid = 480, return.timestamped.dataframe=FALSE, 
-#'  individual.file.save=FALSE)
-#'  }
-#' }
 #' @seealso 
 #'  \code{\link[readr]{write_delim}}
 #'  \code{\link[plyr]{rbind.fill}}
@@ -34,7 +25,7 @@
 #' @importFrom plyr rbind.fill
 
 mars.main <- function(study.name = "study", 
-                      datadir, results, adult.cp = "", child.cp = "",
+                      datadir, results, adult.cp = "", child.cp = "", spurious = 20000,
                       axis = 1, overwrite=FALSE, person.time=FALSE, 
                       person.date=TRUE, person.month=FALSE, valid = 480,
                       return.timestamped.dataframe=FALSE, individual.file.save=FALSE) {
@@ -45,11 +36,14 @@ mars.main <- function(study.name = "study",
     demographics <- birth.date(datadir, files)
   }
   
-  newdatadir <- agd_to_csv(datadir)
+  if(any(grepl(pattern = ".csv", x = files))){
+    csv.files <- sort(list.files(datadir, pattern = ".csv", full.names = TRUE))
+  }
   
-  setwd(newdatadir)
-  
-  csv.files <- sort(list.files(pattern = ".csv"))
+  if(any(grepl(pattern = ".agd", x = files))){
+    newdatadir <- agd_to_csv(datadir)  
+    csv.files <- sort(c(csv.files, list.files(newdatadir, pattern = ".csv", full.names = TRUE)))
+  }
   
   accel.data <- data.frame()
   
@@ -71,14 +65,14 @@ mars.main <- function(study.name = "study",
   
   for (file in csv.files) {
     
-    record.id = strsplit(file, split = " ")[[1]][1]
+    record.id = strsplit(basename(file), split = " ")[[1]][1]
     
     print(paste0("Processing accelerometer data from: ", record.id))
     
     if(exists("demographics")){
-      data <- AGread.csv(demo=demographics, newdatadir=newdatadir, file=file, record.id)
+      data <- AGread.csv(demo=demographics, file=file, record.id)
     } else {
-      data <- AGread.csv(demo=NULL, newdatadir=newdatadir, file=file, record.id)
+      data <- AGread.csv(demo=NULL, file=file, record.id)
     }
     
     data <- AG.temporal(data, season=TRUE, weekday=TRUE, time=TRUE)
@@ -87,7 +81,7 @@ mars.main <- function(study.name = "study",
     # Only child
     if(child.cp != "" & adult.cp == ""){
       if(child.cp == "freedson.child" & exists("age", data)){
-        data <- cutpoints(data = data, sets = cutpoint.list, set.name=child.cp, n.axis=as.character(axis), spurious = 20000) 
+        data <- cutpoints(data = data, sets = cutpoint.list, set.name=child.cp, n.axis=as.character(axis), spurious = spurious) 
       } 
       if (child.cp == "freedson.child" & !exists("age", data)) {
         stop("Age-specific cut-point specified, but could not find age in the data.")
@@ -96,7 +90,7 @@ mars.main <- function(study.name = "study",
     
     # Only adult
     if(adult.cp != "" & child.cp == ""){
-      data <- cutpoints(data = data, sets = cutpoint.list, set.name=adult.cp, n.axis=as.character(axis), spurious = 20000) 
+      data <- cutpoints(data = data, sets = cutpoint.list, set.name=adult.cp, n.axis=as.character(axis), spurious = spurious) 
     }
     
     # Both adult and child
@@ -110,11 +104,11 @@ mars.main <- function(study.name = "study",
       data.18.over <- data[data$age >= 18, ]
       
       if (dim(data.under.18)[1]!=0) {
-        data.under.18 <- cutpoints(data = data.under.18, sets = cutpoint.list, set.name=child.cp, n.axis=as.character(axis), spurious = 20000) 
+        data.under.18 <- cutpoints(data = data.under.18, sets = cutpoint.list, set.name=child.cp, n.axis=as.character(axis), spurious = spurious) 
       }
       
       if (dim(data.18.over)[1]!=0) {
-        data.18.over <- cutpoints(data = data.18.over, sets = cutpoint.list, set.name=adult.cp, n.axis=as.character(axis), spurious = 20000)
+        data.18.over <- cutpoints(data = data.18.over, sets = cutpoint.list, set.name=adult.cp, n.axis=as.character(axis), spurious = spurious)
       }
       
       data = rbind(data.under.18, data.18.over)
