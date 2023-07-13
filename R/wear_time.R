@@ -21,7 +21,7 @@ calculate_wear_time <- function(directory, valid_wear_time = c(8, 10)){
   files <- list.files(directory, full.names = TRUE, pattern = ".csv$|.agd$")
   
   for(file in files){
-    id <- substr(basename(file), 2, 5)
+    id <- strsplit(basename(file), " ")[[1]][1]
     print(sprintf("Processing data from %s", id))
     
     # Check to see if .csv file
@@ -53,7 +53,7 @@ calculate_wear_time <- function(directory, valid_wear_time = c(8, 10)){
                 weekend = mean(weekend), .groups = "drop")
     
     for(i in 1:length(valid_wear_time)){
-      data[, paste0("valid_day_", valid_wear_time[i])] <- ifelse(data$wear > valid_wear_time[i] * 60, 1, 0)
+      data[, paste0("valid_day_", valid_wear_time[i])] <- ifelse(data$wear >= valid_wear_time[i] * 60, 1, 0)
       data[, paste0("weekend_", valid_wear_time[i])] <- ifelse(data$weekend==1 & data[, paste0("valid_day_", valid_wear_time[i])]==1, 1, 0)
       data[, paste0("wear_", valid_wear_time[i])] <- ifelse(data[, paste0("valid_day_", valid_wear_time[i])] == 1, data$wear, 0)
     }
