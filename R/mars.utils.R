@@ -45,7 +45,6 @@ birth.date <- function(datadir, files){
 #' @title AGread.csv
 #' @description Reads in the accelerometer csv file and prepares the data set for processing. 
 #' @param demo Date of birth file that will be matched based on recrod id to apply age-specific cutpoints, Default: NULL
-#' @param newdatadir Data directory where the CSV file is stored
 #' @param file Location of the file to be processed. 
 #' @param record_id Participant ID.
 #' @return Returns a data set with the timepoint (e.g., A=Baseline, B=6-months, etc.), record ID, timestamp, age of the participant (if date of birth file is used), vertical axis counts, and vector magnitude.
@@ -63,41 +62,49 @@ birth.date <- function(datadir, files){
 #' @importFrom utils read.csv
 #' @importFrom stats complete.cases
 
-AGread.csv <- function(demo=NULL, newdatadir, file, record_id){
-  data <- utils::read.csv(paste0(newdatadir, "/", file), skip = 10)
-  colnames(data) <- tolower(colnames(data))
-  colnames(data) <- make.names(colnames(data))
-  
-  year.length <- nchar(strsplit(data$date, "/")[[1]][3])
-  if(year.length==4){
-    data$date <- as.Date(data$date, tryFormats = c("%m/%d/%Y", "%m/%d/%y"))
-  } else{
-    data$date <- as.Date(data$date, tryFormats = c("%m/%d/%y", "%m/%d/%Y"))
-  }
-  
-  data$record.id <- record_id
-  data$time.stamp <- as.POSIXct(paste0(data$date, " ", data$time), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+AGread.csv <- function(demo=NULL, file, record_id){
   
   `%notin%` <- Negate(`%in%`)
   `%>%` <- dplyr::`%>%`
   
-  if(is.null(demo)==FALSE){
-    data$dob <- demo[demo$id==substring(record_id, 2, nchar(record_id)), "dob"]
-    data$age <- as.integer(difftime(data$date, data$dob, units = "days") / 365.25)
-    data$age <- data$age[1]
-    data$dob <- NULL
-  }
+  if(strsplit(readLines(file, 1), split = ",")[[1]][1] == "time"){
+    data <- utils::read.csv(file)
+    colnames(data) <- tolower(colnames(data))
+    data <- rename(data, "counts" = "axis1", "time.stamp" = "time")
+    data$record.id <- record_id
+    data <- data[, c("record.id", "time.stamp", "counts", "vector.magnitude")]
+  } 
   
-  data$counts = data$axis1
-  
-  if("vector.magnitude" %in% colnames(data)) {
-    data <- data %>% dplyr::relocate(c(vector.magnitude, steps), .after = counts) %>% dplyr::select(record.id:steps)
-    data <- data[stats::complete.cases(data), ]
-  }
-  
-  if("vector.magnitude" %notin% colnames(data)){
-    data <- data %>% dplyr::relocate(steps, .after = counts) %>% dplyr::select(record.id:steps)
-    data <- data[stats::complete.cases(data), ]
+  if(strsplit(readLines(file, 1), split = ",")[[1]][1] != "time"){
+    data <- utils::read.csv(file, skip = 10)
+    colnames(data) <- tolower(colnames(data))
+    colnames(data) <- make.names(colnames(data))
+    year.length <- nchar(strsplit(data$date, "/")[[1]][3])
+    if(year.length==4){
+      data$date <- as.Date(data$date, tryFormats = c("%m/%d/%Y", "%m/%d/%y"))
+    } else{
+      data$date <- as.Date(data$date, tryFormats = c("%m/%d/%y", "%m/%d/%Y"))
+    }
+    data$time.stamp <- as.POSIXct(paste0(data$date, " ", data$time), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+    data$record.id <- record_id
+    data$counts <- data$axis1
+    
+    if(!is.null(demo)){
+      data$dob <- demo[demo$id==substring(record_id, 2, nchar(record_id)), "dob"]
+      data$age <- as.integer(difftime(data$date, data$dob, units = "days") / 365.25)
+      data$age <- data$age[1]
+      data$dob <- NULL
+    }
+    
+    if("vector.magnitude" %in% colnames(data)) {
+      data <- data %>% dplyr::relocate(c(vector.magnitude, steps), .after = counts) %>% dplyr::select(record.id:steps)
+      data <- data[stats::complete.cases(data), ]
+    }
+    
+    if("vector.magnitude" %notin% colnames(data)){
+      data <- data %>% dplyr::relocate(steps, .after = counts) %>% dplyr::select(record.id:steps)
+      data <- data[stats::complete.cases(data), ]
+    }
   }
   return(data)
 }
