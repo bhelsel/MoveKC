@@ -4,9 +4,11 @@
 \alias{wear_time_tbl_summary}
 \title{wear_time_tbl_summary}
 \usage{
-wear_time_tbl_summary(days = c(), weekend = TRUE)
+wear_time_tbl_summary(data, days = c(), weekend = TRUE)
 }
 \arguments{
+\item{data}{Data with wear time information from the calculate_wear_time function}
+
 \item{days}{Number of days to consider for valid wear time, Default: c()}
 
 \item{weekend}{Whether the wear time criteria consider the difference between valid weekend days, Default: TRUE}

@@ -1,3 +1,7 @@
+# Copyright © 2023 University of Kansas. All rights reserved.
+#
+# Creative Commons Attribution NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
+
 #' @title cutpoints
 #' @description This function applies commonly used cutpoints to accelerometer data and returns the intensity.
 #' @param data Accelerometer data set with a time stamp and either counts or vector magnitude.

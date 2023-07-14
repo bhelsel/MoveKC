@@ -1,3 +1,7 @@
+# Copyright © 2023 University of Kansas. All rights reserved.
+#
+# Creative Commons Attribution NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
+
 #' @title Movement Analysis for Remote Sensors (MARS)
 #' @description Main function to execute MARS accelerometer processing program.
 #' @param study.name Abbreviation of the Study, Default: study

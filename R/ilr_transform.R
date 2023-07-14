@@ -1,3 +1,7 @@
+# Copyright © 2023 University of Kansas. All rights reserved.
+#
+# Creative Commons Attribution NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
+
 #' @title Isometric Log Ratio Transformation
 #' @description This function does an isometric log ratio transformation.
 #' @param X Matrix or data frame that includes only variables in the composition.

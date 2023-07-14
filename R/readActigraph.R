@@ -1,3 +1,7 @@
+# Copyright © 2023 University of Kansas. All rights reserved.
+#
+# Creative Commons Attribution NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
+
 #' @title Convert GT3X Files to CSV
 #' @description Convert a single GT3X file to a CSV file with removed timestamp to be processed by GGIR.
 #' @param origin Origin of the GT3X file.

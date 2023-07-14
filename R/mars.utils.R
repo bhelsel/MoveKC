@@ -1,3 +1,7 @@
+# Copyright © 2023 University of Kansas. All rights reserved.
+#
+# Creative Commons Attribution NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
+
 #' @title birth.date
 #' @description Reads in a date of birth csv file located in the same data folder as the accelerometer files to apply age-specific cutpoints.
 #' @param datadir Data directory for the accelerometer files.

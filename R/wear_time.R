@@ -1,3 +1,7 @@
+# Copyright © 2023 University of Kansas. All rights reserved.
+#
+# Creative Commons Attribution NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
+
 #' @title calculate_wear_time
 #' @description Calculates wear time for several .agd or .csv files
 #' @param directory Path name to the location of the .agd or .csv files

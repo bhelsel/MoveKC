@@ -10,6 +10,7 @@ mars.main(
   results,
   adult.cp = "",
   child.cp = "",
+  spurious = 20000,
   axis = 1,
   overwrite = FALSE,
   person.time = FALSE,
@@ -30,6 +31,8 @@ mars.main(
 \item{adult.cp}{Adult cut-point to be used (see cutpoint.list.R for list of available cut-points), Default: ''}
 
 \item{child.cp}{Child cut-point to be used (see cutpoint.list.R for list of available cut-points), Default: ''}
+
+\item{spurious}{A maximum value for vertical or vector magnitude counts to not exceed, Default: 20000}
 
 \item{axis}{Number of axes to be used (1: Vertical Axis; 3: Vector Magnitude), Default: 1}
 
@@ -55,17 +58,6 @@ Main function to execute MARS accelerometer processing program.
 }
 \details{
 Main function to execute MARS accelerometer processing program.
-}
-\examples{
-\dontrun{
-if(interactive()){
- mars.main(study.name = "study", study.id = "A1001", datadir=datadir, 
- results=results, adult.cp = "troiano.adult", child.cp = "freedson.child", 
- axis = 1, overwrite=FALSE, person.time=FALSE,  person.date=TRUE, 
- person.month=FALSE, valid = 480, return.timestamped.dataframe=FALSE, 
- individual.file.save=FALSE)
- }
-}
 }
 \seealso{
 \code{\link[readr]{write_delim}}
