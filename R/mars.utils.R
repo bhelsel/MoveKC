@@ -89,8 +89,8 @@ AGread.csv <- function(demo=NULL, file, record_id){
     } else{
       data$date <- as.Date(data$date, tryFormats = c("%m/%d/%y", "%m/%d/%Y"))
     }
-    data$time.stamp <- as.POSIXct(paste0(data$date, " ", data$time), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
     data$record.id <- record_id
+    data$time.stamp <- as.POSIXct(paste0(data$date, " ", data$time), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
     data$counts <- data$axis1
     
     if(!is.null(demo)){

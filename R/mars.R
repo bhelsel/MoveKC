@@ -45,23 +45,27 @@ mars.main <- function(study.name = "study",
   }
   
   if(any(grepl(pattern = ".agd", x = files))){
-    newdatadir <- agd_to_csv(datadir)  
-    csv.files <- sort(c(csv.files, list.files(newdatadir, pattern = ".csv", full.names = TRUE)))
+    newdatadir <- agd_to_csv(datadir) 
+    if(!exists("csv.files")){
+      csv.files <- sort(list.files(newdatadir, pattern = ".csv", full.names = TRUE))
+    } else{
+      csv.files <- sort(c(csv.files, list.files(newdatadir, pattern = ".csv", full.names = TRUE)))
+    }
   }
   
   accel.data <- data.frame()
   
-  if(dir.exists(results)==FALSE) {
+  if(!dir.exists(results)) {
     dir.create(results)
   }
   
-  if (dir.exists(paste0(results, "/Individual Files"))==FALSE) {
+  if (!dir.exists(paste0(results, "/Individual Files"))) {
     dir.create(paste0(results, "/Individual Files"))
   }
   
   individual.files <- paste0(results, "/Individual Files")
   
-  if(dir.exists(paste0(results, "/Summary Files"))==FALSE){
+  if(!dir.exists(paste0(results, "/Summary Files"))){
     dir.create(paste0(results, "/Summary Files"))
   }
   
