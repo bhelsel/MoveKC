@@ -23,15 +23,15 @@ ilr_transform <- function(X){
   r <- nrow(X)
   
   X.ilr <- matrix(NA, r, j)
-  rX.ilr <- X[, c:1]
+  rX.ilr <- X[, c:1, drop = FALSE]
   
   for (i in 1:r) {
-    for (k in 1:j) {
-      X.ilr[i, k] <- sqrt(k/(k+1))*log(rX.ilr[i, k+1] / ((prod(rX.ilr[i, 1:k]))^(1/k)))
+    for (k in j:1) {
+      X.ilr[i, k] <- sqrt(k/(k+1)) * (log(rX.ilr[i, k+1] / (prod(rX.ilr[i, k:1])^(1/k))))
     }
   }
   
-  X.ilr <- X.ilr[, j:1]
+  X.ilr <- X.ilr[, j:1, drop = FALSE]
   colnames(X.ilr) <- vapply(1:j, function(x) paste0("z", x), character(1))
   
   message(paste("Relative effect of", first_var, "on other variables"))
