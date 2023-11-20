@@ -4,12 +4,10 @@
 \alias{birth.date}
 \title{birth.date}
 \usage{
-birth.date(datadir, files)
+birth.date(datadir)
 }
 \arguments{
 \item{datadir}{Data directory for the accelerometer files.}
-
-\item{files}{Files to search through for the date of birth CSV}
 }
 \value{
 Returns a date of birth data set that can be applied to the accelerometer data for age-specific cutpoints.

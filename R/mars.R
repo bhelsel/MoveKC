@@ -18,6 +18,7 @@
 #' @param valid Set the number of minutes for a valid day, Default: 480
 #' @param return.timestamped.dataframe Return a timestamped data set into R for all combined time point and id data, Default: FALSE
 #' @param individual.file.save Save all of the individual timestamped files to a CSV, Default: FALSE
+#' @param do.parallel Process dates in parallel to speed up the processing of the accelerometer data
 #' @return Individual and/or summary files to a Results folder located in the designated directory.
 #' @details Main function to execute MARS accelerometer processing program.
 #' @seealso 
@@ -32,59 +33,38 @@ mars.main <- function(study.name = "study",
                       datadir, results, adult.cp = "", child.cp = "", spurious = 20000,
                       axis = 1, overwrite=FALSE, person.time=FALSE, 
                       person.date=TRUE, person.month=FALSE, valid = 480,
-                      return.timestamped.dataframe=FALSE, individual.file.save=FALSE) {
+                      return.timestamped.dataframe=FALSE, individual.file.save=FALSE,
+                      do.parallel = TRUE) {
   
-  files <- sort(list.files(datadir))
+  files <- sort(list.files(datadir, pattern = ".agd$"))
   
-  if(child.cp == "freedson.child"){
-    demographics <- birth.date(datadir, files)
-  }
+  newdatadir <- agd_to_csv(datadir)
   
-  if(any(grepl(pattern = ".csv", x = files))){
-    csv.files <- sort(list.files(datadir, pattern = ".csv", full.names = TRUE))
-  }
+  csv.files <- sort(list.files(newdatadir, pattern = ".csv$", full.names = TRUE))
   
-  if(any(grepl(pattern = ".agd", x = files))){
-    newdatadir <- agd_to_csv(datadir) 
-    if(!exists("csv.files")){
-      csv.files <- sort(list.files(newdatadir, pattern = ".csv", full.names = TRUE))
-    } else{
-      csv.files <- sort(c(csv.files, list.files(newdatadir, pattern = ".csv", full.names = TRUE)))
-    }
-  }
+  if(!dir.exists(results)) dir.create(results)
   
-  accel.data <- data.frame()
-  
-  if(!dir.exists(results)) {
-    dir.create(results)
-  }
-  
-  if (!dir.exists(paste0(results, "/Individual Files"))) {
-    dir.create(paste0(results, "/Individual Files"))
-  }
+  if (!dir.exists(paste0(results, "/Individual Files"))) dir.create(paste0(results, "/Individual Files"))
   
   individual.files <- paste0(results, "/Individual Files")
   
-  if(!dir.exists(paste0(results, "/Summary Files"))){
-    dir.create(paste0(results, "/Summary Files"))
-  }
+  if(!dir.exists(paste0(results, "/Summary Files"))) dir.create(paste0(results, "/Summary Files"))
   
   summary.files <- paste0(results, "/Summary Files")
   
-  for (file in csv.files) {
+  if(child.cp == "freedson.child"){
+    demographics <- birth.date(datadir)
+  } else {
+    demographics <- NULL
+  }
+  
+  main <- function(file, study.name, demographics, child.cp, 
+                   adult.cp, spurious, axis, individual.file.save){
     
     record.id = strsplit(basename(file), split = " ")[[1]][1]
-    
     print(paste0("Processing accelerometer data from: ", record.id))
-    
-    if(exists("demographics")){
-      data <- AGread.csv(demo=demographics, file=file, record.id)
-    } else {
-      data <- AGread.csv(demo=NULL, file=file, record.id)
-    }
-    
+    data <- AGread.csv(demo=demographics, file=file, record.id)
     data <- AG.temporal(data, season=TRUE, weekday=TRUE, time=TRUE)
-    
     
     # Only child
     if(child.cp != "" & adult.cp == ""){
@@ -122,39 +102,53 @@ mars.main <- function(study.name = "study",
       data = rbind(data.under.18, data.18.over)
     }
     
-    if (child.cp != "" & adult.cp != ""){
-      name = paste0(study.name,".", child.cp, ".", adult.cp, ".", axis, "axis")
-    }
+    # if(individual.file.save==TRUE){
+    #   
+    #   individual.filename <- paste0(individual.files, "/", record.id, ".", name, ".csv")
+    #   }
+    #   
+    #   if(file.exists(individual.filename)==TRUE & overwrite==TRUE){
+    #     readr::write_csv(data, individual.filename, append=FALSE, col_names = TRUE)
+    #   }
+    #   
+    #   if(file.exists(individual.filename)==FALSE){
+    #     readr::write_csv(data, individual.filename, append=FALSE, col_names = TRUE)
+    #   }
     
-    if (child.cp != "" & adult.cp == ""){
-      name = paste0(study.name,".", child.cp, ".", axis, "axis")
-    }
-    
-    if (child.cp == "" & adult.cp != ""){
-      name = paste0(study.name,".", adult.cp, ".", axis, "axis")
-    }
-    
-    if(individual.file.save==TRUE){
+    return(data)
+  }
+  
+  # if parallel
+  if(do.parallel) {
+    cores <- parallel::detectCores()
+    Ncores = cores - 1
+    cl = parallel::makeCluster(Ncores)
+    doParallel::registerDoParallel(cl)
+    `%dopar%` <- foreach::`%dopar%`
+    data <- 
+      foreach::foreach(i = csv.files, .packages = "MoveKC", 
+                       .export = "cutpoint.list", .errorhandling ="pass") %dopar% {
+                         main(file = i, study.name = study.name, demographics = demographics, 
+                              child.cp = child.cp, adult.cp = adult.cp, spurious = spurious,
+                              axis = axis, individual.file.save = individual.file.save)
+                         }
+    accel.data <- dplyr::bind_rows(data)
+    parallel::stopCluster(cl)
+  } else{
+    accel.data <- data.frame()
+    for(i in csv.files){
+      data <- main(file = i, study.name = study.name, demographics = demographics, 
+                   child.cp = child.cp, adult.cp = adult.cp, spurious = spurious,
+                   axis = axis, individual.file.save = individual.file.save)
       
-      individual.filename <- paste0(individual.files, "/", record.id, ".", name, ".csv")
-      
-      if(file.exists(individual.filename)==TRUE & overwrite==TRUE){
-        readr::write_csv(data, individual.filename, append=FALSE, col_names = TRUE)
-      }
-      
-      if(file.exists(individual.filename)==FALSE){
-        readr::write_csv(data, individual.filename, append=FALSE, col_names = TRUE)
-      }
-      
+      accel.data <- plyr::rbind.fill(accel.data, data) # write to csv file if request for time series analysis
     }
-    
-    accel.data <- plyr::rbind.fill(accel.data, data) # write to csv file if request for time series analysis
-    
   }
   
   `%>%` <- dplyr::`%>%`
   
   # add age back at some point
+  if("age" %in% colnames(accel.data)) accel.data$age <- NULL
   
   data.by.person.time <- accel.data %>%
     dplyr::group_by(record.id, date=format(accel.data$time.stamp, "%m/%d/%Y"), days, weekday, time.category, season) %>%
@@ -178,6 +172,20 @@ mars.main <- function(study.name = "study",
     dplyr::summarise(valid_days = sum(valid_days, na.rm=TRUE), .groups = "keep")
   
   data.by.person <- merge(data.by.person, valid.days, by="record.id", all = TRUE)
+  
+  # Set File Name
+  
+  if (child.cp != "" & adult.cp != ""){
+    name = paste0(study.name,".", child.cp, ".", adult.cp, ".", axis, "axis")
+  }
+
+  if (child.cp != "" & adult.cp == ""){
+    name = paste0(study.name,".", child.cp, ".", axis, "axis")
+  }
+
+  if (child.cp == "" & adult.cp != ""){
+    name = paste0(study.name,".", adult.cp, ".", axis, "axis")
+  }
   
   if(person.time==TRUE){
     readr::write_csv(data.by.person.time, paste0(summary.files, "/", name, ".person.time.csv"), append=FALSE, col_names=TRUE)

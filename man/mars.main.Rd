@@ -18,7 +18,8 @@ mars.main(
   person.month = FALSE,
   valid = 480,
   return.timestamped.dataframe = FALSE,
-  individual.file.save = FALSE
+  individual.file.save = FALSE,
+  do.parallel = TRUE
 )
 }
 \arguments{
@@ -49,6 +50,8 @@ mars.main(
 \item{return.timestamped.dataframe}{Return a timestamped data set into R for all combined time point and id data, Default: FALSE}
 
 \item{individual.file.save}{Save all of the individual timestamped files to a CSV, Default: FALSE}
+
+\item{do.parallel}{Process dates in parallel to speed up the processing of the accelerometer data}
 }
 \value{
 Individual and/or summary files to a Results folder located in the designated directory.

@@ -5,7 +5,6 @@
 #' @title birth.date
 #' @description Reads in a date of birth csv file located in the same data folder as the accelerometer files to apply age-specific cutpoints.
 #' @param datadir Data directory for the accelerometer files.
-#' @param files Files to search through for the date of birth CSV
 #' @return Returns a date of birth data set that can be applied to the accelerometer data for age-specific cutpoints.
 #' @details Reads in a date of birth csv file located in the same data folder as the accelerometer files to apply age-specific cutpoints.
 #' @examples 
@@ -23,12 +22,12 @@
 #' @importFrom stats complete.cases
 #' @importFrom rlang is_empty
 
-birth.date <- function(datadir, files){
-  dob.file <- grep("dob", files, value=TRUE)
+birth.date <- function(datadir){
+  dob.file <- grep("dob", list.files(datadir, pattern = ".csv$"), value=TRUE)
   if(rlang::is_empty(dob.file)){
     stop("No date of birth file found")
   }
-  dob <- utils::read.csv(paste0(datadir, "/", dob.file))
+  dob <- utils::read.csv(file.path(datadir, dob.file))
   dob <- dob[, c(1:2)]
   dob <- dob[stats::complete.cases(dob), ]
   dob$id <- as.character(dob$id)
@@ -94,22 +93,21 @@ AGread.csv <- function(demo=NULL, file, record_id){
     data$counts <- data$axis1
     
     if(!is.null(demo)){
-      data$dob <- demo[demo$id==substring(record_id, 2, nchar(record_id)), "dob"]
+      data$dob <- demo[demo$id == substring(record_id, 2, nchar(record_id)), "dob"]
       data$age <- as.integer(difftime(data$date, data$dob, units = "days") / 365.25)
       data$age <- data$age[1]
       data$dob <- NULL
     }
     
     if("vector.magnitude" %in% colnames(data)) {
-      data <- data %>% dplyr::relocate(c(vector.magnitude, steps), .after = counts) %>% dplyr::select(record.id:steps)
+      data <- data %>% dplyr::relocate(c(vector.magnitude, steps), .after = counts) %>% dplyr::select(record.id:ncol(.))
       data <- data[stats::complete.cases(data), ]
-    }
-    
-    if("vector.magnitude" %notin% colnames(data)){
-      data <- data %>% dplyr::relocate(steps, .after = counts) %>% dplyr::select(record.id:steps)
+    } else{
+      data <- data %>% dplyr::relocate(steps, .after = counts) %>% dplyr::select(record.id:ncol(.))
       data <- data[stats::complete.cases(data), ]
     }
   }
+  
   return(data)
 }
 
