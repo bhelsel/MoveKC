@@ -16,7 +16,9 @@ mars.main(
   person.time = FALSE,
   person.date = TRUE,
   person.month = FALSE,
-  valid = 480,
+  valid_time = NULL,
+  valid_days = NULL,
+  valid_weekend = NULL,
   return.timestamped.dataframe = FALSE,
   individual.file.save = FALSE,
   do.parallel = TRUE
@@ -45,7 +47,11 @@ mars.main(
 
 \item{person.month}{Export only valid days to a summary by person time point of the trial, Default: FALSE}
 
-\item{valid}{Set the number of minutes for a valid day, Default: 480}
+\item{valid_time}{Number of hours or minutes for a valid day (converts values between 1-24 to minutes by multiplying by 60), Default: NULL}
+
+\item{valid_days}{Number of days for inclusion, Default: NULL}
+
+\item{valid_weekend}{Number of weekend days for inclusion, Default: NULL}
 
 \item{return.timestamped.dataframe}{Return a timestamped data set into R for all combined time point and id data, Default: FALSE}
 

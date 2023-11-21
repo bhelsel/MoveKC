@@ -15,7 +15,9 @@
 #' @param person.time Export the accelerometer summary by person time categories, Default: FALSE
 #' @param person.date Export the accelerometer summary by person date, Default: TRUE
 #' @param person.month Export only valid days to a summary by person time point of the trial, Default: FALSE
-#' @param valid Set the number of minutes for a valid day, Default: 480
+#' @param valid_time Number of hours or minutes for a valid day (converts values between 1-24 to minutes by multiplying by 60), Default: NULL
+#' @param valid_days Number of days for inclusion, Default: NULL
+#' @param valid_weekend Number of weekend days for inclusion, Default: NULL
 #' @param return.timestamped.dataframe Return a timestamped data set into R for all combined time point and id data, Default: FALSE
 #' @param individual.file.save Save all of the individual timestamped files to a CSV, Default: FALSE
 #' @param do.parallel Process dates in parallel to speed up the processing of the accelerometer data
@@ -32,7 +34,8 @@
 mars.main <- function(study.name = "study",
                       datadir, results, adult.cp = "", child.cp = "", spurious = 20000,
                       axis = 1, overwrite=FALSE, person.time=FALSE,
-                      person.date=TRUE, person.month=FALSE, valid = 480,
+                      person.date=TRUE, person.month=FALSE, valid_time = NULL,
+                      valid_days = NULL, valid_weekend = NULL,
                       return.timestamped.dataframe=FALSE, individual.file.save=FALSE,
                       do.parallel = TRUE) {
 
@@ -45,8 +48,6 @@ mars.main <- function(study.name = "study",
   if(!dir.exists(results)) dir.create(results)
 
   if (!dir.exists(paste0(results, "/Individual Files"))) dir.create(paste0(results, "/Individual Files"))
-
-  individual.files <- paste0(results, "/Individual Files")
 
   if(!dir.exists(paste0(results, "/Summary Files"))) dir.create(paste0(results, "/Summary Files"))
 
@@ -104,18 +105,12 @@ mars.main <- function(study.name = "study",
       data = rbind(data.under.18, data.18.over)
     }
 
-    # if(individual.file.save==TRUE){
-    #
-    #   individual.filename <- paste0(individual.files, "/", record.id, ".", name, ".csv")
-    #   }
-    #
-    #   if(file.exists(individual.filename)==TRUE & overwrite==TRUE){
-    #     readr::write_csv(data, individual.filename, append=FALSE, col_names = TRUE)
-    #   }
-    #
-    #   if(file.exists(individual.filename)==FALSE){
-    #     readr::write_csv(data, individual.filename, append=FALSE, col_names = TRUE)
-    #   }
+    if(individual.file.save){
+      fn <- file.path(results, "Individual Files", gsub(".csv$", ".RData", basename(file)))
+      if(file.exists(fn) & overwrite | !file.exists(fn)){
+        readr::write_csv(data, fn, append=FALSE, col_names = TRUE)
+      }
+    }
 
     return(data)
   }
@@ -130,7 +125,7 @@ mars.main <- function(study.name = "study",
     accel.data <- foreach::foreach(i = csv.files, .packages = "MoveKC", .errorhandling = "pass") %dopar% {
       data <- tryCatch({
         main(file = i, study.name = study.name, demographics = demographics,
-             cutpoint.list, child.cp = child.cp, adult.cp = adult.cp,
+             cutpoint.list = cutpoint.list, child.cp = child.cp, adult.cp = adult.cp,
              spurious = spurious, axis = axis,
              individual.file.save = individual.file.save)},
         error = function(err){
@@ -139,8 +134,12 @@ mars.main <- function(study.name = "study",
         )
     }
     errors_no <- which(do.call("c", lapply(accel.data, is.character)))
-    errors <- do.call("c", accel.data[errors_no])
-    accel.data <- dplyr::bind_rows(accel.data[-errors_no])
+    if(length(errors_no) != 0){
+      errors <- do.call("c", accel.data[errors_no])
+      accel.data <- dplyr::bind_rows(accel.data[-errors_no])
+    } else {
+      accel.data <- dplyr::bind_rows(accel.data)
+    }
     parallel::stopCluster(cl)
   } else{
     accel.data <- list()
@@ -157,8 +156,12 @@ mars.main <- function(study.name = "study",
       accel.data <- append(accel.data, list(data))
     }
     errors_no <- which(do.call("c", lapply(accel.data, is.character)))
-    errors <- do.call("c", accel.data[errors_no])
-    accel.data <- dplyr::bind_rows(accel.data[-errors_no])
+    if(length(errors_no) != 0){
+      errors <- do.call("c", accel.data[errors_no])
+      accel.data <- dplyr::bind_rows(accel.data[-errors_no])
+    } else {
+      accel.data <- dplyr::bind_rows(accel.data)
+    }
   }
 
   `%>%` <- dplyr::`%>%`
@@ -166,28 +169,28 @@ mars.main <- function(study.name = "study",
   # add age back at some point
   if("age" %in% colnames(accel.data)) accel.data$age <- NULL
 
-  data.by.person.time <- accel.data %>%
+  data.by.person.time <-
+    accel.data %>%
     dplyr::group_by(record.id, date=format(accel.data$time.stamp, "%m/%d/%Y"), days, weekday, time.category, season) %>%
     dplyr::summarise_at(names(dplyr::select(accel.data, counts:mvpa.bout.counts)), sum, na.rm=TRUE)
 
-  data.by.person.date <- accel.data %>%
+  valid_time <- ifelse(valid_time <= 24, valid_time * 60, valid_time)
+
+  data.by.person.date <-
+    accel.data %>%
     dplyr::group_by(record.id, date=format(accel.data$time.stamp, "%m/%d/%Y"), days, weekday, season) %>%
     dplyr::summarise_at(names(dplyr::select(accel.data, counts:mvpa.bout.counts)), sum, na.rm=TRUE) %>%
-    dplyr::ungroup()
+    dplyr::ungroup() %>%
+    dplyr::mutate(valid_day = ifelse(wear >= valid_time, 1, 0),
+                  weekend = ifelse(weekday %in% c("Saturday", "Sunday"), 1, 0))
 
-  data.by.person.date$valid_days <- ifelse(data.by.person.date$wear >= valid, 1, 0)
-
-  data.by.person <- data.by.person.date %>%
-    dplyr::filter(wear >= valid) %>%
+  data.by.person <-
+    data.by.person.date %>%
+    dplyr::filter(valid_day == 1) %>%
     dplyr::group_by(record.id) %>%
-    dplyr::summarise_at(names(dplyr::select(data.by.person.date, counts:mvpa.bout.counts)), mean, na.rm=TRUE)
-
-  valid.days <- data.by.person.date %>%
-    dplyr::filter(wear >= valid) %>%
-    dplyr::group_by(record.id) %>%
-    dplyr::summarise(valid_days = sum(valid_days, na.rm=TRUE), .groups = "keep")
-
-  data.by.person <- merge(data.by.person, valid.days, by="record.id", all = TRUE)
+    dplyr::summarise_at(vars(counts:weekend), sum, na.rm = TRUE) %>%
+    dplyr::mutate_at(vars(counts:mvpa.bout.counts), .funs = function(x) x / .$valid_day) %>%
+    dplyr::filter(valid_day >= valid_days & weekend >= valid_weekend)
 
   # Set File Name
 
@@ -215,7 +218,7 @@ mars.main <- function(study.name = "study",
     readr::write_csv(data.by.person, paste0(summary.files, "/", name, ".person.csv"), append=FALSE, col_names=TRUE)
   }
 
-  if(length(errors) != 0) cat(sprintf("Error processing the following files:\n %s", paste(errors, collapse = "\n ")))
+  if(length(errors_no) != 0) cat(sprintf("Error processing the following files:\n %s", paste(errors, collapse = "\n ")))
 
   if(return.timestamped.dataframe==TRUE){
     return(accel.data)
