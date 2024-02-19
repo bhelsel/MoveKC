@@ -7,7 +7,9 @@
 \description{
 The MoveKC package provides several important functions:
 
-\code{\link{ilr_transform}}
+\code{\link{ilr_pivotCoord}}
+
+\code{\link{get_ilr}}
 
 \code{\link{mars.main}}
 
