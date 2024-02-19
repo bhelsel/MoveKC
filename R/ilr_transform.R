@@ -14,6 +14,7 @@
 #' @rdname ilr_pivotCoord
 #' @export
 
+
 ilr_pivotCoord <- function(X){
   
   if(is.data.frame(X)) X <- as.matrix(X)
@@ -33,14 +34,16 @@ ilr_pivotCoord <- function(X){
     }
   }
   
-  X.ilr <- X.ilr[, j:1, drop = FALSE]
-  colnames(X.ilr) <- vapply(1:j, function(x) paste0("z", x), character(1))
+  X.ilr <- data.frame(X.ilr[, j:1])
   
-  message(paste("Relative effect of", first_var, "on other variables"))
+  if (all(nchar(colnames(X)) > 1)) {
+    for (i in 1:(ncol(X) - 1)) {
+      colnames(X.ilr)[i] <- paste(colnames(X)[i], "_", paste(substr(colnames(X)[(i + 1):ncol(X)], 1, 2), collapse = "-"), collapse = "", sep = "")
+    }
+  }
   
   return(X.ilr)
 }
-
 
 
 #' @noRd
