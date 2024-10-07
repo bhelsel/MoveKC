@@ -1,5 +1,5 @@
 
-
+#' @export
 
 predict_delta_comps_copy <- function(
     dataf, # data.frame of data

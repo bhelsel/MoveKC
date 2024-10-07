@@ -35,7 +35,7 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(
 #'
 #' \code{\link{detect.bouts}}
 #'
-#' @docType package
+#' @docType _PACKAGE
 #' @name MoveKC
 #' @import dplyr
 #' @import magrittr
