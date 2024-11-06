@@ -108,7 +108,7 @@ mars.main <- function(study.name = "study",
     if(individual.file.save){
       fn <- file.path(results, "Individual Files", gsub(".csv$", ".RData", basename(file)))
       if(file.exists(fn) & overwrite | !file.exists(fn)){
-        readr::write_csv(data, fn, append=FALSE, col_names = TRUE)
+        save(object = data, file = fn)
       }
     }
 
